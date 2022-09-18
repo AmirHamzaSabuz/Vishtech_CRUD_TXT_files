@@ -1,0 +1,10 @@
+Microsoft.AspNetCore.Cors
+Microsoft.AspNetCore.Mvc.NewtonsoftJson
+
+Microsoft.EntityFrameworkCore
+Microsoft.EntityFrameworkCore.Relational
+Microsoft.EntityFrameworkCore.SqlServer
+Microsoft.EntityFrameworkCore.Tools
+
+Microsoft.Extensions.Logging.Debug
+Microsoft.VisualStudio.Web.CodeGeneration.Design

@@ -1,0 +1,531 @@
+
+Manage Nuget package => install 
+
+	Microsoft.EntityFrameworkCore
+	
+	Microsoft.EntityFrameworkCore.Tools
+
+	Microsoft.EntityFrameworkCore.Relational
+	
+	Microsoft.EntityFrameworkCore.SqlServer
+	
+	Microsoft.AspNetCore.Mvc.NewtonsoftJson
+	
+	Microsoft.AspNetCore.Cors 
+	
+====
+
+appsettings.json => 
+
+	"ConnectionStrings": {
+		"DatabaseContext": "Server=DESKTOP-1NSPU91\\MSSQL_HAMZA;Database=AngularTutorialDB;Trusted_Connection=True;"
+	}
+	
+====
+
+Create a new file named Models
+
+Models => Add new class DatabaseContext
+
+DatabaseContext.cs =>
+
+	using Microsoft.EntityFrameworkCore;
+	using System;
+	using System.Collections.Generic;
+	using System.Linq;
+	using System.Threading.Tasks;
+
+	namespace AngularTutorialAPI.Models
+	{
+		public class DatabaseContext:DbContext
+		{
+			public DatabaseContext(DbContextOptions options) : base(options) { 
+
+			}
+
+			public DbSet<Employee> Employee { get; set; }
+
+		}
+	}
+
+Employee.cs => 
+
+	using System;
+	using System.Collections.Generic;
+	using System.Linq;
+	using System.Threading.Tasks;
+
+	namespace AngularTutorialAPI.Models
+	{
+		public class Employee
+		{
+			public int id { get; set; }
+			public string name { get; set; }
+			public string email { get; set; }
+			public string password { get; set; }
+
+
+		}
+	}
+
+Startsup.cs =>
+
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
+using AngularTutorialAPI.Models;
+using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.HttpsPolicy;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
+
+namespace AngularTutorialAPI
+{
+    public class Startup
+    {
+        public Startup(IConfiguration configuration)
+        {
+            Configuration = configuration;
+        }
+
+        public IConfiguration Configuration { get; }
+
+        // This method gets called by the runtime. Use this method to add services to the container.
+        public void ConfigureServices(IServiceCollection services)
+        {
+            services.AddControllers().AddNewtonsoftJson();
+            services.AddControllers();
+            services.AddCors();
+            services.AddDbContext<DatabaseContext>(options => options.UseSqlServer(Configuration.GetConnectionString("DatabaseContext")));
+        }
+
+        // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
+        public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
+        {
+            if (env.IsDevelopment())
+            {
+                app.UseDeveloperExceptionPage();
+            }
+            app.UseCors(a => a.SetIsOriginAllowed(x => _ = true).AllowAnyMethod().AllowAnyHeader().AllowCredentials());
+            app.UseHttpsRedirection();
+
+            app.UseRouting();
+
+            app.UseAuthorization();
+
+            app.UseEndpoints(endpoints =>
+            {
+                endpoints.MapControllers();
+            });
+        }
+    }
+}
+
+	
+======
+
+add-migration
+
+update-database 
+
+======
+
+Microsoft.VisualStudio.Web.CodeGeneration.Design
+Microsoft.Extensions.Logging.Debug
+
+Controller => Add => API Controller - Empty => EmpController
+
+
+EmpController => 
+
+	using System;
+	using System.Collections.Generic;
+	using System.Linq;
+	using System.Threading.Tasks;
+	using AngularTutorialAPI.Models;
+	using Microsoft.AspNetCore.Http;
+	using Microsoft.AspNetCore.Mvc;
+
+	namespace AngularTutorialAPI.Controllers
+	{
+		[Route("[controller]")]
+		[ApiController]
+		public class EmpController : ControllerBase
+		{
+			private readonly DatabaseContext _context;
+			public EmpController(DatabaseContext context)
+			{
+				this._context = context;
+			}
+			[HttpGet]
+			public ActionResult<List<Employee>> Get() {
+				return Ok(_context.Employee.ToList());
+			}
+
+			[HttpGet("{id}")]
+			public ActionResult<Employee> Get(int id)
+			{
+				var employee = _context.Employee.FirstOrDefault(a => a.id == id);
+				return Ok(employee); 
+			}
+
+			[HttpPost]
+			public ActionResult<Employee> Post(Employee employee) {
+				_context.Employee.Add(employee);
+				_context.SaveChanges();
+				return Ok(employee);
+			}
+
+			[HttpPut]
+			public ActionResult<Employee> Put(Employee employee)
+			{
+				var employeeInDb = _context.Employee.FirstOrDefault(a => a.id == employee.id);
+				employeeInDb.name = employee.name;
+				employeeInDb.password = employee.password;
+				employeeInDb.email = employee.email;
+				_context.SaveChanges();
+				return Ok(employee);
+			}
+
+			[HttpDelete("{id}")]
+			public ActionResult<Employee> Delete(int id) {
+				var employeeInDb = _context.Employee.FirstOrDefault(a => a.id == id);
+				_context.Remove(employeeInDb);
+				_context.SaveChanges();
+				return Ok(employeeInDb);
+			}
+
+		}
+	}	
+	
+=====================
+
+Postman => 
+
+Get => https://localhost:44348/emp => Send 
+
+output
+
+[]
+
+==========
+
+POST => https://localhost:44348/emp => Body => Raw => JSON =>
+
+    {
+        "id": 0,
+        "name": "test1",
+        "email": "test1@test.com",
+        "password": "123456"
+    }
+	
+output
+
+	{
+		"id": 1,
+		"name": "test1",
+		"email": "test1@test.com",
+		"password": "123456"
+	}	
+
+==========	
+	
+POST => https://localhost:44348/emp => Body => Raw => JSON =>
+
+    {
+        "id": 0,
+        "name": "test2",
+        "email": "test2@test.com",
+        "password": "123456"
+    }
+
+output 
+
+	{
+		"id": 2,
+		"name": "test2",
+		"email": "test2@test.com",
+		"password": "123456"
+	}	
+
+==========	
+
+Get => https://localhost:44348/emp => Send 
+
+output
+
+	[
+		{
+			"id": 1,
+			"name": "test1",
+			"email": "test1@test.com",
+			"password": "123456"
+		},
+		{
+			"id": 2,
+			"name": "test2",
+			"email": "test2@test.com",
+			"password": "123456"
+		}
+	]
+	
+==========	
+
+Get => https://localhost:44348/emp/2 => send 
+
+	{
+		"id": 2,
+		"name": "test2",
+		"email": "test2@test.com",
+		"password": "123456"
+	}	
+
+PUT => https://localhost:44348/emp => Body => Raw => JSON =>
+
+{
+    "id": 2,
+    "name": "test2_edited",
+    "email": "test2_edited@test.com",
+    "password": "123456"
+}
+
+output
+
+{
+    "id": 2,
+    "name": "test2_edited",
+    "email": "test2_edited@test.com",
+    "password": "123456"
+}
+
+========== 
+
+Delete => https://localhost:44348/emp/2 => send 
+
+output 
+
+	{
+		"id": 2,
+		"name": "test2_edited",
+		"email": "test2_edited@test.com",
+		"password": "123456"
+	}
+
+Get => https://localhost:44348/emp => Send 
+
+[
+    {
+        "id": 1,
+        "name": "test1",
+        "email": "test1@test.com",
+        "password": "123456"
+    }
+]
+
+========== 
+
+============================================================================================
+
+================================================
+
+EmpController.cs => generated code / before
+
+	using System;
+	using System.Collections.Generic;
+	using System.Linq;
+	using System.Threading.Tasks;
+	using Microsoft.AspNetCore.Http;
+	using Microsoft.AspNetCore.Mvc;
+
+	namespace AngularTutorialAPI.Controllers
+	{
+		[Route("api/[controller]")]
+		[ApiController]
+		public class EmpController : ControllerBase
+		{
+		}
+	}
+	
+EmpController.cs => after 
+
+	using System;
+	using System.Collections.Generic;
+	using System.Linq;
+	using System.Threading.Tasks;
+	using AngularTutorialAPI.Models;
+	using Microsoft.AspNetCore.Http;
+	using Microsoft.AspNetCore.Mvc;
+
+	namespace AngularTutorialAPI.Controllers
+	{
+		[Route("[controller]")]
+		[ApiController]
+		public class EmpController : ControllerBase
+		{
+			private readonly DatabaseContext _context;
+			public EmpController(DatabaseContext context)
+			{
+				this._context = context;
+			}
+			[HttpGet]
+			public ActionResult<List<Employee>> Get() {
+				return Ok(_context.Employee.ToList());
+			}
+
+			[HttpGet("{id}")]
+			public ActionResult<Employee> Get(int id)
+			{
+				var employee = _context.Employee.FirstOrDefault(a => a.id == id);
+				return Ok(employee); 
+			}
+
+			[HttpPost]
+			public ActionResult<Employee> Post(Employee employee) {
+				_context.Employee.Add(employee);
+				_context.SaveChanges();
+				return Ok(employee);
+			}
+
+			[HttpPut]
+			public ActionResult<Employee> Put(Employee employee)
+			{
+				var employeeInDb = _context.Employee.FirstOrDefault(a => a.id == employee.id);
+				employeeInDb.name = employee.name;
+				employeeInDb.password = employee.password;
+				employeeInDb.email = employee.email;
+				_context.SaveChanges();
+				return Ok(employee);
+			}
+
+			[HttpDelete("{id}")]
+			public ActionResult<Employee> Delete(int id) {
+				var employeeInDb = _context.Employee.FirstOrDefault(a => a.id == id);
+				_context.Remove(employeeInDb);
+				_context.SaveChanges();
+				return Ok(employeeInDb);
+			}
+
+		}
+	}	
+
+===========================
+
+Postman =>
+
+POST => https://localhost:44348/Emp
+
+Body => raw => JSON =>
+
+	{
+		"id": "0",
+		"name": "test",
+		"email": "test@test.com",
+		"password": "12345"
+	}
+
+output 
+
+	{
+		"id": 1,
+		"name": "test",
+		"email": "test@test.com",
+		"password": "12345"
+	}	
+	
+=============
+
+PUT => https://localhost:44348/Emp
+
+Body => raw => JSON =>	
+
+	{
+		"id": "1",
+		"name": "test1",
+		"email": "test1@test.com",
+		"password": "123456"
+	}
+
+output:
+
+	{
+		"id": 1,
+		"name": "test1",
+		"email": "test1@test.com",
+		"password": "123456"
+	}	
+	
+===================
+
+POST => https://localhost:44348/Emp
+
+Body => raw => JSON => 
+
+	{
+		"id": "0",
+		"name": "test2",
+		"email": "test2@test.com",
+		"password": "123456"
+	}	
+	
+output 
+
+	{
+		"id": 2,
+		"name": "test2",
+		"email": "test2@test.com",
+		"password": "123456"
+	}	
+	
+===================
+
+GET => 	 https://localhost:44348/Emp
+
+	[
+		{
+			"id": 1,
+			"name": "test1",
+			"email": "test1@test.com",
+			"password": "123456"
+		},
+		{
+			"id": 2,
+			"name": "test2",
+			"email": "test2@test.com",
+			"password": "123456"
+		}
+	]
+
+GET => 	 https://localhost:44348/Emp/2 
+
+	{
+		"id": 2,
+		"name": "test2",
+		"email": "test2@test.com",
+		"password": "123456"
+	}
+	
+DELETE =>  https://localhost:44348/Emp/2 
+	
+	{
+		"id": 2,
+		"name": "test2",
+		"email": "test2@test.com",
+		"password": "123456"
+	}
+
+GET => 	 https://localhost:44348/Emp
+
+	[
+		{
+			"id": 1,
+			"name": "test1",
+			"email": "test1@test.com",
+			"password": "123456"
+		}
+	]	
